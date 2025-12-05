@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package campaign.v1;
+
+option go_package = "Auc-AD-Service/grpc/proto/campaign/campaignv1";
+
+service CampaignService {
+  rpc CreateCampaign(CreateCampaignRequest) returns (CreateCampaignResponse);
+  rpc GetCampaign(GetCampaignRequest) returns (GetCampaignResponse);
+  rpc ListCampaigns(ListCampaignsRequest) returns (ListCampaignsResponse);
+  rpc UpdateCampaign(UpdateCampaignRequest) returns (UpdateCampaignResponse);
+  rpc ChangeCampaignStatus(ChangeCampaignStatusRequest) returns (ChangeCampaignStatusResponse);
+}
+
+
+message CampaignHeader {
+    uint32 id = 1;
+    string campaign_name = 2;
+}
+
+message BudgetInfo {
+    string target = 1;
+    double budget = 2;
+    double bid = 3;
+}
+
+message Audience {
+    string sex = 1;
+    uint32  age = 2;
+    repeated string interests = 3;
+    string location = 4;
+}
+
+message PeriodInfo {
+    google.protobuf.Timestamp start_date = 1;
+    google.protobuf.Timestamp deadline_date = 2;
+}
+
+message CreateInfo {
+    google.protobuf.Timestamp created_at = 1;
+    google.protobuf.Timestamp updated_at = 2;
+    google.protobuf.Timestamp status_updated_at = 3;
+}
+
+message CreateCampaignRequest {
+    string campaign_name = 1;
+    reserved 2;
+    BudgetInfo budget_info = 3;
+    reserved 4;
+    reserved 5;
+    Audience audience = 6;
+    reserved 7;
+    reserved 8;
+    PeriodInfo period_info = 9;
+}
+
+message CreateCampaignResponse {
+    CampaignHeader campaign_header = 1;
+    string status = 2;
+    CreateInfo create_info = 11;
+}
+
+message GetCampaignRequest {
+    uint32 id = 1;
+}
+
+message GetCampaignResponse {
+    CampaignHeader campaign_header = 1;
+    string status = 2;
+    BudgetInfo budget_info = 3;
+    double expenses = 4;
+    reserved 5;
+    Audience audience = 6;
+    reserved 7;
+    reserved 8;
+    PeriodInfo period_info = 9;
+    reserved 10;
+    CreateInfo create_info = 11;
+}
+
+message ListCampaignsRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+message ListCampaignsResponse {
+    repeated GetCampaignResponse get_campaign_response = 1;
+}
+
+message UpdateCampaignRequest {
+    CampaignHeader campaign_header = 1;
+    reserved 2;
+    BudgetInfo budget_info = 3;
+    reserved 4;
+    reserved 5;
+    Audience audience = 6;
+    reserved 7;
+    reserved 8;
+    PeriodInfo period_info = 9;
+}
+
+message UpdateCampaignResponse {
+    string message = 1;
+}
+
+message ChangeCampaignStatusRequest {
+  string campaign_id = 1;
+  string new_status = 2; // active / paused / stopped
+}
+
+message ChangeCampaignStatusResponse {
+  string message = 1;
+}
