@@ -4,7 +4,7 @@ import "google/protobuf/timestamp.proto";
 
 package campaign.v1;
 
-option go_package = "Auc-AD-Service/grpc/proto/campaign/campaignv1";
+option go_package = "Auc-AD-Service/grpc/proto/campaign/v1";
 
 service CampaignService {
   rpc CreateCampaign(CreateCampaignRequest) returns (CreateCampaignResponse);
