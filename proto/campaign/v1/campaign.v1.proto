@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
 
 package campaign.v1;
 
@@ -16,82 +17,207 @@ service CampaignService {
 
 
 message CampaignHeader {
-    uint32 id = 1;
-    string campaign_name = 2;
+    uint32 campaign_id = 1[
+        (buf.validate.field).required = true
+    ];
+    string campaign_name = 2 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 255
+    ];
 }
 
 message BudgetInfo {
-    string target = 1;
-    double budget = 2;
-    double bid = 3;
+    option (buf.validate.message).cel = {
+        id: "budget_gt_bid",
+        message: "budget must be greater than bid",
+        expression: "this.budget > this.bid"
+    };
+
+    string target = 1 [
+        (buf.validate.field).string.in = "CPC,CPT,CPM",
+        (buf.validate.field).required = true
+    ];
+    double budget = 2 [
+        (buf.validate.field).double.gt = 0,
+        (buf.validate.field).required = true
+    ];
+    double bid = 3 [
+        (buf.validate.field).double.gt = 0,
+        (buf.validate.field).required = true
+    ];
 }
 
 message Audience {
-    string sex = 1;
-    uint32  age = 2;
-    repeated string interests = 3;
-    string location = 4;
+    string sex = 1[
+        (buf.validate.field).string.in = "male, female"
+    ];
+    repeated uint32 age = 2 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).repeated = {
+            min_items: 2,
+            max_items: 2,
+            unique: true
+        },
+        (buf.validate.field).repeated.items.uint32 = {
+            gte: 14,
+            lt: 120
+        }
+    ];
+    repeated string interests = 3 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).repeated = {
+            min_items: 1,
+            max_items: 10,
+            unique: true,
+        },
+        (buf.validate.field).repeated.items.string = {
+            min_len: 1,
+            max_len:50
+        }
+    ];
+    string location = 4 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 100
+    ];
 }
 
 message PeriodInfo {
-    google.protobuf.Timestamp start_date = 1;
-    google.protobuf.Timestamp deadline_date = 2;
+    option (buf.validate.message).cel = {
+        id: "deadline_after_start",
+        message: "deadline_date must be after start_date",
+        expression: "this.deadline_date > this.start_date"
+    };
+
+    google.protobuf.Timestamp start_date = 1 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).timestamp.gt_now = true
+    ];
+    google.protobuf.Timestamp deadline_date = 2 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).timestamp.gt_now = true
+    ];
 }
 
 message CreateInfo {
-    google.protobuf.Timestamp created_at = 1;
-    google.protobuf.Timestamp updated_at = 2;
-    google.protobuf.Timestamp status_updated_at = 3;
+    option (buf.validate.message).cel = {
+        id: "timestamps_order",
+        message: "created_at must be before updated_at and status_updated_at",
+        expression: "this.created_at <= this.updated_at && this.created_at <= this.status_updated_at"
+    };
+
+    google.protobuf.Timestamp created_at = 1 [
+        (buf.validate.field).required = true
+    ];
+    google.protobuf.Timestamp updated_at = 2 [
+        (buf.validate.field).required = true
+    ];
+    google.protobuf.Timestamp status_updated_at = 3 [
+        (buf.validate.field).required = true
+    ];
 }
 
 message CreateCampaignRequest {
-    string campaign_name = 1;
+    string campaign_name = 1 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 255,
+        (buf.validate.field).required = true
+    ];
     reserved 2;
-    BudgetInfo budget_info = 3;
+    BudgetInfo budget_info = 3 [
+        (buf.validate.field).required = true
+    ];
     reserved 4;
     reserved 5;
-    Audience audience = 6;
+    Audience audience = 6 [
+        (buf.validate.field).required = true
+    ];
     reserved 7;
     reserved 8;
-    PeriodInfo period_info = 9;
+    PeriodInfo period_info = 9 [
+        (buf.validate.field).required = true
+    ];
 }
 
 message CreateCampaignResponse {
-    CampaignHeader campaign_header = 1;
-    string status = 2;
-    CreateInfo create_info = 11;
+    CampaignHeader campaign_header = 1 [
+        (buf.validate.field).required = true
+    ];
+    string status = 2 [
+        (buf.validate.field).string.in = "preparation, active, paused, stopped, completed",
+        (buf.validate.field).required = true
+    ];
+    CreateInfo create_info = 11 [
+        (buf.validate.field).required = true
+    ];
 }
 
 message GetCampaignRequest {
-    uint32 id = 1;
+    uint32 id = 1 [
+        (buf.validate.field).required = true
+    ];
 }
 
 message GetCampaignResponse {
-    CampaignHeader campaign_header = 1;
-    string status = 2;
-    BudgetInfo budget_info = 3;
-    double expenses = 4;
+    CampaignHeader campaign_header = 1 [
+        (buf.validate.field).required = true
+    ];
+    string status = 2 [
+        (buf.validate.field).string.in = "preparation, active, paused, stopped, completed",
+        (buf.validate.field).required = true
+    ];
+    BudgetInfo budget_info = 3 [
+        (buf.validate.field).required = true
+    ];
+    double expenses = 4 [
+        (buf.validate.field).double.gt = 0,
+        (buf.validate.field).required = true
+    ];
     reserved 5;
-    Audience audience = 6;
+    Audience audience = 6 [
+        (buf.validate.field).required = true
+    ];
     reserved 7;
     reserved 8;
-    PeriodInfo period_info = 9;
+    PeriodInfo period_info = 9 [
+        (buf.validate.field).required = true
+    ];
     reserved 10;
-    CreateInfo create_info = 11;
+    CreateInfo create_info = 11 [
+        (buf.validate.field).required = true
+    ];
 }
 
 message ListCampaignsRequest {
-    int32 limit = 1;
-    int32 offset = 2;
+    int32 limit = 1 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).int32.gt = 0,
+        (buf.validate.field).int32.lte = 100
+    ];
+    int32 offset = 2 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).required = true
+    ];
 }
 
 message ListCampaignsResponse {
-    repeated GetCampaignResponse get_campaign_response = 1;
+    repeated GetCampaignResponse get_campaign_response = 1 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).repeated = {
+            min_items: 1,
+            max_items: 100
+        }
+    ];
 }
 
 message UpdateCampaignRequest {
-    CampaignHeader campaign_header = 1;
-    reserved 2;
+    uint32 campaign_id = 1 [
+        (buf.validate.field).required = true
+    ];
+    string campaign_name = 2 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 255
+    ];
     BudgetInfo budget_info = 3;
     reserved 4;
     reserved 5;
@@ -102,14 +228,23 @@ message UpdateCampaignRequest {
 }
 
 message UpdateCampaignResponse {
-    string message = 1;
+    string message = 1 [
+        (buf.validate.field).required = true
+    ];
 }
 
 message ChangeCampaignStatusRequest {
-  string campaign_id = 1;
-  string new_status = 2; // active / paused / stopped
+  string campaign_id = 1 [
+        (buf.validate.field).required = true
+    ];
+  string new_status = 2 [
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.in = "active, paused, stopped"
+    ];
 }
 
 message ChangeCampaignStatusResponse {
-  string message = 1;
+  string message = 1 [
+        (buf.validate.field).required = true
+    ];
 }
